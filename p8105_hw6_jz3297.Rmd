@@ -162,6 +162,8 @@ mul_fit = lm(bwt ~ ., data = fit_df)
 summary(mul_fit)
 ```
 
+<br />
+
 Use function step() for variable selection based on AIC criterion, the option used is "backward".
 
 ```{r}
@@ -169,6 +171,8 @@ step(mul_fit, direction = "backward")
 ```
 
 The goal is to have the lowest AIC for all predictors combined. The output showed that AIC increased after taking out each variable, thus, all variables are significant predictors for baby birth weights. We should keep all predictors.
+
+<br />
 
 ```{r}
 model_1 = lm(bwt ~ ., data = fit_df)
@@ -179,7 +183,7 @@ model_1 %>%
   knitr::kable()
 ```
 
-Look at residuals
+<br />
 
 ```{r}
 fit_df =
@@ -189,6 +193,8 @@ fit_df =
 
 fit_df
 ```
+
+<br />
 
 ### Look at residuals
 
@@ -203,7 +209,7 @@ fit_df %>%
   )
 ```
 
-
+* From the graph, the dots are scattered around a center which is slightly skewed to the right. There are a few dots far from the scatter but nothing extreme is observed.
 
 ```{r}
 fit_df %>% 
@@ -309,4 +315,93 @@ weather_df =
     tmax = tmax / 10) %>%
   select(name, id, everything())
 ```
+
+<br />
+
+### Generate 5000 bootstrap results
+
+```{r, warning=F}
+boot_results =
+  weather_df %>% 
+  bootstrap(n = 5000, id = "strap_number") %>% 
+  mutate(
+    models = map(strap, ~lm(tmax ~ tmin, data = .x)),
+    results_tidy = map(models, broom::tidy),
+    results_glance = map(models, broom::glance)
+  ) %>% 
+  unnest(results_tidy, results_glance) %>% 
+  select(strap_number, term, estimate, r_squared = r.squared)
+
+boot_results
+```
+
+<br />
+
+### Look at distribution of r^2
+
+```{r}
+boot_results %>% 
+  ggplot(aes(x = r_squared)) +
+  geom_density() +
+  labs(
+    title = "Distribution of r^2",
+    x = "r^2 value"
+  )
+```
+
+* From the graph, r^2 is relatively normal distributed. It is centered around 0.91 which is close to 1. 
+
+<br />
+
+### Obtain estimates for log(beta0 * beta1)
+
+```{r}
+log_df =
+  boot_results %>% 
+  select(strap_number, term, estimate) %>% 
+  pivot_wider(
+    names_from = term,
+    values_from = estimate
+  ) %>% 
+  rename(intercept = `(Intercept)`) %>% 
+  mutate(
+    log_beta = log(intercept * tmin)
+  )
+```
+
+<br />
+
+### Look at distribution of log(beta0 * beta1)
+
+```{r}
+log_df %>% 
+  ggplot(aes(x = log_beta)) +
+  geom_density() +
+  labs(
+    title = "Distribution of log(beta0 * beta1)",
+    x = "log(beta0 * beta1)"
+  )
+```
+
+* The distribution of log(beta0 * beta1) is relatively normal. It is centered around 2.01. 
+
+<br />
+
+### Identify the 2.5% and 97.5% quantiles to provide a 95% CI for two quantities
+
+```{r}
+quantile(boot_results %>% pull(r_squared), probs = c(0.025, 0.975)) %>% 
+  knitr::kable()
+```
+
+* The 95% CI for r^2 is between 0.895 and 0.927
+
+<br />
+
+```{r}
+quantile(log_df %>% pull(log_beta), probs = c(0.025, 0.975)) %>% 
+  knitr::kable()
+```
+
+* The 95% CI for log(beta0 * beta1) is between 1.964 and 2.060
 
