@@ -8,7 +8,6 @@ output: github_document
 library(tidyverse)
 library(modelr)
 library(p8105.datasets)
-library(purrr)
 library(mgcv)
 
 knitr::opts_chunk$set(
@@ -49,7 +48,7 @@ homicide_df =
 
 <br />
 
-### Start with one city
+#### Start with one city
 
 ```{r}
 baltimore_df =
@@ -72,7 +71,7 @@ glm(resolution ~ victim_age + victim_race + victim_sex,
 
 <br />
 
-### Try this across cities
+#### Try this across cities
 
 ```{r}
 models_results_df =
@@ -144,7 +143,7 @@ birth_weight_df =
 
 <br />
 
-### Build models - Step-wise Backward Method
+#### Build models - Step-wise Backward Method
 
 Model 1: 
 
@@ -164,7 +163,7 @@ summary(mul_fit)
 
 <br />
 
-Use function step() for variable selection based on AIC criterion, the option used is "backward".
+Use function "step( )" for variable selection based on AIC criterion, the option used is "backward".
 
 ```{r}
 step(mul_fit, direction = "backward")
@@ -196,7 +195,7 @@ fit_df
 
 <br />
 
-### Look at residuals
+#### Look at residuals
 
 ```{r}
 fit_df %>% 
@@ -226,7 +225,7 @@ fit_df %>%
 
 <br />
 
-### Other Two Models
+#### Create other two models
 
 Model 2: Length at birth and gestational age as predictors
 
@@ -252,7 +251,7 @@ model_3 %>%
 
 <br />
 
-### Cross validation for three models
+#### Cross validation for three models
 
 ```{r}
 cv_df =
@@ -276,7 +275,9 @@ cv_birth_weight =
     )
 ```
 
-### Compare the models
+<br />
+
+#### Compare the models
 
 ```{r}
 cv_birth_weight %>% 
@@ -318,7 +319,7 @@ weather_df =
 
 <br />
 
-### Generate 5000 bootstrap results
+#### Generate 5000 bootstrap results
 
 ```{r, warning=F}
 boot_results =
@@ -337,7 +338,7 @@ boot_results
 
 <br />
 
-### Look at distribution of r^2
+#### Look at distribution of r^2
 
 ```{r}
 boot_results %>% 
@@ -353,7 +354,7 @@ boot_results %>%
 
 <br />
 
-### Obtain estimates for log(beta0 * beta1)
+#### Obtain estimates for log(beta0 * beta1)
 
 ```{r}
 log_df =
@@ -371,7 +372,7 @@ log_df =
 
 <br />
 
-### Look at distribution of log(beta0 * beta1)
+#### Look at distribution of log(beta0 * beta1)
 
 ```{r}
 log_df %>% 
@@ -387,7 +388,7 @@ log_df %>%
 
 <br />
 
-### Identify the 2.5% and 97.5% quantiles to provide a 95% CI for two quantities
+#### Identify the 2.5% and 97.5% quantiles to provide a 95% CI for two quantities
 
 ```{r}
 quantile(boot_results %>% pull(r_squared), probs = c(0.025, 0.975)) %>% 
