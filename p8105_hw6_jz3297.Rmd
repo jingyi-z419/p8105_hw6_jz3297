@@ -8,6 +8,7 @@ output: github_document
 library(tidyverse)
 library(modelr)
 library(p8105.datasets)
+library(purrr)
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -25,7 +26,6 @@ options(
 scale_colour_discrete = scale_colour_viridis_d
 scale_fill_discrete = scale_fill_viridis_d
 ```
-
 
 ## Problem 1
 
@@ -46,7 +46,9 @@ homicide_df =
   select(city_state, resolution, victim_age, victim_race, victim_sex)
 ```
 
-Start with one city.
+<br />
+
+### Start with one city
 
 ```{r}
 baltimore_df =
@@ -67,7 +69,9 @@ glm(resolution ~ victim_age + victim_race + victim_sex,
   knitr::kable(digits = 3)
 ```
 
-Try this across cities.
+<br />
+
+### Try this across cities
 
 ```{r}
 models_results_df =
@@ -98,15 +102,137 @@ models_results_df %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 ```
 
-live session starts at 53:10
+<br />
 
 ## Problem 2
 
 ```{r load_clean_data_2}
 birth_weight_df =
-  read_csv("./birth_weight_data/birthweight.csv")
+  read_csv("./birth_weight_data/birthweight.csv") %>% 
+  janitor::clean_names() %>% 
+  drop_na() %>% 
+  filter(frace != 9) %>% 
+  mutate(
+    babysex = case_when(
+      babysex == 1 ~ "male",
+      babysex == 2 ~ "female"
+    ),
+    malform = case_when(
+      malform == 0 ~ "absent",
+      malform == 1 ~ "present"
+    ),
+    frace = case_when(
+      frace == 1 ~ "White",
+      frace == 2 ~ "Black",
+      frace == 3 ~ "Asian",
+      frace == 4 ~ "Puerto Rican",
+      frace == 8 ~ "Other"
+    ),
+    mrace = case_when(
+      mrace == 1 ~ "White",
+      mrace == 2 ~ "Black",
+      mrace == 3 ~ "Asian",
+      mrace == 4 ~ "Puerto Rican",
+      mrace == 8 ~ "Other"
+    )
+  ) %>% 
+  mutate(
+    across(where(is.character), as.factor)
+  )
 ```
 
+<br />
+
+### Build models - Step-wise Backward Method
+
+Model 1: 
+
+The assumption is that mother's physical characteristics have effects on baby birth weights. 
+
+First, fit the model for all predictors.
+
+```{r}
+fit_df =
+  birth_weight_df %>% 
+  select(bwt, delwt, gaweeks, menarche, mheight, momage, ppbmi, ppwt, smoken)
+
+mul_fit = lm(bwt ~ ., data = fit_df)
+
+summary(mul_fit)
+```
+
+Use function step() for variable selection based on AIC criterion, the option used is "backward".
+
+```{r}
+step(mul_fit, direction = "backward")
+```
+
+The goal is to have the lowest AIC for all predictors combined. The output showed that AIC increased after taking out each variable, thus, all variables are significant predictors for baby birth weights. We should keep all predictors.
+
+```{r}
+model_1 = lm(bwt ~ ., data = fit_df)
+
+model_1 %>% 
+  broom::tidy() %>% 
+  select(-std.error, -statistic) %>% 
+  knitr::kable()
+```
+
+Look at residuals
+
+```{r}
+fit_df =
+  fit_df %>% 
+  modelr::add_residuals(model_1) %>% 
+  modelr::add_predictions(model_1)
+
+fit_df
+```
+
+Make residual plots
+
+```{r}
+fit_df %>% 
+  ggplot(aes(x = pred, y = resid)) +
+  geom_point(alpha = 0.5)
+```
+
+
+
+```{r}
+fit_df %>% 
+  ggplot(aes(x = resid)) +
+  geom_density()
+```
+
+
+<br />
+
+### Other Two Models
+
+Model 2: Length at birth and gestational age as predictors
+
+```{r}
+model_2 = lm(bwt ~ blength + gaweeks, data = birth_weight_df)
+
+model_2 %>% 
+  broom::tidy() %>% 
+  select(-std.error, -statistic) %>% 
+  knitr::kable()
+```
+
+Model 3: Head circumference, length, sex and all interactions between these.
+
+```{r}
+model_3 = lm(bwt ~ bhead * blength * babysex, data = birth_weight_df)
+
+model_3 %>% 
+  broom::tidy() %>% 
+  select(-std.error, -statistic) %>% 
+  knitr::kable()
+```
+
+<br />
 
 ## Problem 3
 
