@@ -208,7 +208,7 @@ fit_df %>%
   )
 ```
 
-* From the graph, the dots are scattered around a center which is slightly skewed to the right. There are a few dots far from the scatter but nothing extreme is observed.
+* From the graph, the dots are scattered around zero. There are a few outliers in the graph but no extreme values are observed.
 
 ```{r}
 fit_df %>% 
@@ -221,7 +221,7 @@ fit_df %>%
   )
 ```
 
-* The density plot of residuals is relatively symmetric with a slight skewness to the right. In general, residuals seem to be centered around zero. 
+* The density plot of residuals is relatively symmetric without heavily skewed to any direction. In general, residuals seem to be centered around zero. 
 
 <br />
 
