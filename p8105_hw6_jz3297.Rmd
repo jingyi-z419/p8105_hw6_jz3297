@@ -322,6 +322,7 @@ weather_df =
 #### Generate 5000 bootstrap results
 
 ```{r, warning=F}
+set.seed(7)
 boot_results =
   weather_df %>% 
   bootstrap(n = 5000, id = "strap_number") %>% 
@@ -391,18 +392,28 @@ log_df %>%
 #### Identify the 2.5% and 97.5% quantiles to provide a 95% CI for two quantities
 
 ```{r}
-quantile(boot_results %>% pull(r_squared), probs = c(0.025, 0.975)) %>% 
+boot_results %>% 
+  distinct(strap_number, r_squared) %>% 
+  summarize(
+    lower = quantile(r_squared, 0.025),
+    upper = quantile(r_squared, 0.975)
+  ) %>% 
   knitr::kable()
 ```
 
-* The 95% CI for r^2 is between 0.895 and 0.927
+* The 95% CI for r^2 is between 0.894 and 0.927
 
 <br />
 
 ```{r}
-quantile(log_df %>% pull(log_beta), probs = c(0.025, 0.975)) %>% 
+log_df %>% 
+  distinct(strap_number, log_beta) %>% 
+  summarize(
+    lower = quantile(log_beta, 0.025),
+    upper = quantile(log_beta, 0.975)
+  ) %>% 
   knitr::kable()
 ```
 
-* The 95% CI for log(beta0 * beta1) is between 1.964 and 2.060
+* The 95% CI for log(beta0 * beta1) is between 1.97 and 2.06
 
